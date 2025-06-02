@@ -1,0 +1,24 @@
+{
+  "name": "claude-code-history",
+  "version": "0.1.0",
+  "exports": "./src/main.ts",
+  "tasks": {
+    "dev": "deno run --allow-read --allow-env src/main.ts",
+    "compile": "deno compile --allow-read --allow-env --output=cch src/main.ts",
+    "compile:macos": "deno compile --allow-read --allow-env --output=cch --target=aarch64-apple-darwin src/main.ts",
+    "compile:macos-intel": "deno compile --allow-read --allow-env --output=cch --target=x86_64-apple-darwin src/main.ts",
+    "compile:linux": "deno compile --allow-read --allow-env --output=cch --target=x86_64-unknown-linux-gnu src/main.ts",
+    "compile:windows": "deno compile --allow-read --allow-env --output=cch.exe --target=x86_64-pc-windows-msvc src/main.ts",
+    "install": "deno run --allow-read --allow-write --allow-env --allow-run install.ts",
+    "test": "deno test --allow-read"
+  },
+  "imports": {
+    "cliffy": "https://deno.land/x/cliffy@v1.0.0-rc.3/mod.ts",
+    "@std/path": "jsr:@std/path@^0.218.0",
+    "@std/fs": "jsr:@std/fs@^0.218.0",
+    "@std/datetime": "jsr:@std/datetime@^0.218.0"
+  },
+  "compilerOptions": {
+    "strict": true
+  }
+}
