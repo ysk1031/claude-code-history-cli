@@ -132,12 +132,17 @@ Options:
     }
 
     // Header with better formatting
-    console.log("\n" + "═".repeat(80));
-    console.log(bold(blue("📂 Project: ")) + cyan(project));
-    console.log(bold(blue("🔖 Session: ")) + cyan(session));
-    console.log(bold(blue("🕐 Time:    ")) + format(sessionData.startTime, "yyyy-MM-dd HH:mm:ss") + dim(" → ") + format(sessionData.endTime, "HH:mm:ss"));
-    console.log(bold(blue("💬 Messages:")) + ` ${sessionData.messages.length}`);
-    console.log("═".repeat(80) + "\n");
+    console.log(
+      "\n" +
+      bold(blue("┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓")) + "\n" +
+      bold(blue("┃")) + " ".repeat(27) + bold("📚 Claude Code History") + " ".repeat(28) + bold(blue("┃")) + "\n" +
+      bold(blue("┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫")) + "\n" +
+      bold(blue("┃")) + " " + bold("📂 Project") + ":  " + cyan(project).padEnd(64) + bold(blue("┃")) + "\n" +
+      bold(blue("┃")) + " " + bold("🔗 Session") + ":  " + yellow(session).padEnd(64) + bold(blue("┃")) + "\n" +
+      bold(blue("┃")) + " " + bold("🕐 Time") + ":     " + (format(sessionData.startTime, "yyyy-MM-dd HH:mm:ss") + " → " + format(sessionData.endTime, "HH:mm:ss")).padEnd(64) + bold(blue("┃")) + "\n" +
+      bold(blue("┃")) + " " + bold("💬 Messages") + ": " + bold(cyan(String(sessionData.messages.length))).padEnd(65) + bold(blue("┃")) + "\n" +
+      bold(blue("┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛")) + "\n"
+    );
 
     let messages = sessionData.messages;
     
@@ -180,17 +185,17 @@ Options:
       
       // Add visual separator between messages (except for the first one)
       if (i > 0) {
-        console.log(dim("─".repeat(80)));
+        console.log("\n" + dim("━".repeat(80)));
       }
       
       // Message header with better formatting
-      console.log("");
+      const timeBox = dim("│") + " " + cyan(time) + " " + dim("│");
+      const roleDisplay = roleIcon + " " + bold(roleColor(roleLabel));
+      
       console.log(
-        dim("[") + cyan(time) + dim("]") + " " +
-        roleIcon + " " + 
-        bold(roleColor(roleLabel))
+        "\n" + timeBox + " " + roleDisplay + "\n" +
+        dim("┈".repeat(80))
       );
-      console.log("");
       
       if (fullFlag) {
         // Format content with proper indentation and styling
@@ -200,12 +205,14 @@ Options:
               line.startsWith("📝") || line.startsWith("💾") || line.startsWith("📋") ||
               line.startsWith("🔍") || line.startsWith("🔎") || line.startsWith("📁") ||
               line.startsWith("📤")) {
-            return "  " + yellow(line);
+            return "  │ " + bold(yellow(line));
           } else if (line.startsWith("   ")) {
             // Indented content (tool details)
-            return "  " + dim(line);
+            return "  │ " + dim(line);
+          } else if (line.trim() === "") {
+            return "  │";
           } else {
-            return "  " + line;
+            return "  │ " + line;
           }
         }).join("\n");
         console.log(formattedContent);
@@ -218,23 +225,38 @@ Options:
               line.startsWith("📝") || line.startsWith("💾") || line.startsWith("📋") ||
               line.startsWith("🔍") || line.startsWith("🔎") || line.startsWith("📁") ||
               line.startsWith("📤")) {
-            return "  " + yellow(line);
+            return "  │ " + bold(yellow(line));
+          } else if (line.trim() === "") {
+            return "  │";
           } else {
-            return "  " + line;
+            return "  │ " + line;
           }
         }).join("\n");
         
         console.log(formattedPreview);
         if (lines.length > 3) {
-          console.log("  " + dim(italic("... (use -f/--full to see complete message)")));
+          console.log("  │ " + dim(italic("... (use -f/--full to see complete message)")));
         }
       }
       
       console.log("");
     }
 
-    // Footer
-    console.log("═".repeat(80));
+    // Footer with summary statistics
+    const claudeCount = messages.filter(m => m.type === "assistant").length;
+    const userCount = messages.filter(m => m.type === "user").length;
+    
+    console.log(
+      "\n" +
+      bold(blue("┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓")) + "\n" +
+      bold(blue("┃")) + " ".repeat(33) + bold("📊 Summary") + " ".repeat(34) + bold(blue("┃")) + "\n" +
+      bold(blue("┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫")) + "\n" +
+      bold(blue("┃")) + " " + bold("📊 Message Breakdown") + ":" + " ".repeat(55) + bold(blue("┃")) + "\n" +
+      bold(blue("┃")) + "   • Total messages: " + bold(cyan(String(messages.length))).padEnd(58) + bold(blue("┃")) + "\n" +
+      bold(blue("┃")) + "   • Claude (🤖):    " + bold(green(String(claudeCount))).padEnd(58) + bold(blue("┃")) + "\n" +
+      bold(blue("┃")) + "   • User (👤):      " + bold(blue(String(userCount))).padEnd(58) + bold(blue("┃")) + "\n" +
+      bold(blue("┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛"))
+    );
     
     if (recentValue && recentValue < sessionData.messages.length) {
       console.log(dim(`\nShowing recent ${recentValue} of ${sessionData.messages.length} messages`));
