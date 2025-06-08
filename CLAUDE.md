@@ -28,6 +28,15 @@ deno task compile:windows    # Windows
 make compile
 ```
 
+### GitHub CLI
+```bash
+# GitHub CLI (gh) is available for repository operations
+gh pr create      # Create pull request
+gh pr list        # List pull requests
+gh issue create   # Create issue
+gh issue list     # List issues
+```
+
 ### Installation
 ```bash
 # Automatic installation (compiles and installs to ~/.local/bin)
