@@ -1,110 +1,208 @@
 # Claude Code History CLI
 
-Claude Codeの会話履歴を見やすく表示するCLIツール
+A command-line tool for viewing and searching Claude Code conversation history with enhanced formatting and navigation features.
 
-## インストール
+## Features
 
-### 前提条件
+- 📁 **Project Management** - List and browse all your Claude Code projects
+- 📝 **Session Overview** - View sessions with timestamps and message counts
+- 💬 **Conversation Display** - Read conversations with formatted tool usage and syntax highlighting
+- 🔍 **Powerful Search** - Search across all projects or within specific projects
+- ⏱️ **Timeline View** - Navigate conversations chronologically
+- 🎯 **Smart Filtering** - Filter by project, date, or content type
+- 🖥️ **Cross-Platform** - Native binaries for macOS, Linux, and Windows
 
-Denoがインストールされている必要があります：
+## Installation
+
+### Prerequisites
+
+Deno must be installed on your system:
 
 ```bash
-# Denoのインストール（未インストールの場合）
+# Install Deno (if not already installed)
 curl -fsSL https://deno.land/install.sh | sh
 
-# パスを通す
+# Add to PATH
 echo 'export DENO_INSTALL="$HOME/.deno"' >> ~/.zshrc
 echo 'export PATH="$DENO_INSTALL/bin:$PATH"' >> ~/.zshrc
 source ~/.zshrc
 ```
 
-### 方法1: 自動インストール（推奨）
+### Quick Install (Recommended)
 
 ```bash
-# リポジトリをクローン
-git clone https://github.com/YOUR_USERNAME/claude-code-history-cli.git
+# Clone the repository
+git clone https://github.com/ysk1031/claude-code-history-cli.git
 cd claude-code-history-cli
 
-# インストールスクリプトを実行
+# Run the installation script
 ./install.sh
 
-# または Deno を使用
+# Or use Deno task
 deno task install
 ```
 
-インストールが完了すると、`cch` コマンドが使用可能になります。
+After installation, the `cch` command will be available in your terminal.
 
-### 方法2: 手動インストール
+### Manual Installation
 
 ```bash
-# バイナリをコンパイル
+# Compile the binary
 deno task compile
 
-# バイナリを PATH の通った場所に移動
+# Move to a directory in your PATH
 sudo mv cch /usr/local/bin/
-# または
+# Or for user-local installation
 mkdir -p ~/.local/bin
 mv cch ~/.local/bin/
 
-# ~/.local/bin を使用する場合は PATH に追加
+# Add ~/.local/bin to PATH if using local installation
 echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc
 source ~/.zshrc
 ```
 
-## 使い方
+## Usage
 
-インストール後は `cch` コマンドで直接使用できます：
+Once installed, use the `cch` command directly:
+
+### Basic Commands
 
 ```bash
-# プロジェクト一覧を表示
+# List all projects
 cch projects
 
-# セッション一覧を表示
+# List sessions for a project
 cch sessions PROJECT_NAME
 
-# 会話履歴を表示
+# Show conversation history
 cch show PROJECT_NAME "session-id"
 
-# 検索
+# Search across all projects
 cch search "keyword"
+
+# Search within a specific project
 cch search -p PROJECT_NAME "keyword"
 ```
 
-注: PROJECT_NAMEは `cch projects` で表示されるプロジェクト名です。
-
-## 開発モード
-
-開発中は以下のコマンドを使用できます：
+### Advanced Usage
 
 ```bash
-# プロジェクト一覧を表示
-deno task dev projects
+# Show full conversation content (not truncated)
+cch show PROJECT_NAME "session-id" --full
 
-# セッション一覧を表示
-deno task dev sessions PROJECT_NAME
+# Limit number of messages displayed
+cch show PROJECT_NAME "session-id" --limit 10
 
-# 会話履歴を表示
-deno task dev show PROJECT_NAME "session-id"
+# Search with project filtering
+cch search -p "My AI Project" "bug fix"
 
-# 検索
-deno task dev search "keyword"
-deno task dev search -p PROJECT_NAME "keyword"
+# Get help for any command
+cch help
+cch show --help
 ```
 
-## 主な機能
+## Development
 
-- 📁 プロジェクト一覧表示
-- 📝 セッション一覧（開始時刻、メッセージ数付き）
-- 💬 会話履歴表示（プレビュー/フル表示）
-- 🔍 キーワード検索（全プロジェクト/特定プロジェクト）
-- ⏱️ タイムスタンプ表示
-- 🎯 プロジェクトフィルタリング
+For development purposes, you can run commands without compilation:
 
-## オプション
+```bash
+# List projects in development mode
+deno task dev projects
 
-### showコマンド
-- `-f, --full`: 完全な内容を表示
-- `-l, --limit <n>`: 表示するメッセージ数を制限
+# Show sessions in development mode
+deno task dev sessions PROJECT_NAME
 
-### searchコマンド
-- `-p, --project <name>`: 特定のプロジェクトに限定して検索
+# Display conversation in development mode
+deno task dev show PROJECT_NAME "session-id"
+
+# Search in development mode
+deno task dev search "keyword"
+
+# Run tests
+deno task test
+```
+
+## Command Reference
+
+### `cch projects`
+Lists all Claude Code projects with their creation dates and session counts.
+
+### `cch sessions <project>`
+Displays all sessions for a given project, showing:
+- Session ID
+- Start time
+- Message count
+- Last activity
+
+### `cch show <project> <session-id>`
+Shows the conversation history for a specific session with:
+- Formatted tool usage (Bash, Read, Edit, etc.)
+- Syntax-highlighted code blocks
+- Timestamp information
+- User and assistant messages
+
+**Options:**
+- `-f, --full` - Display complete message content (default shows abbreviated)
+- `-l, --limit <n>` - Limit the number of messages shown
+
+### `cch search <query>`
+Searches through conversation content across projects.
+
+**Options:**
+- `-p, --project <name>` - Limit search to a specific project
+
+## Build and Deployment
+
+### Compilation
+
+```bash
+# Auto-detect platform and compile
+deno task compile
+
+# Platform-specific compilation
+deno task compile:macos      # macOS ARM64
+deno task compile:macos-intel # macOS Intel
+deno task compile:linux      # Linux x86_64
+deno task compile:windows    # Windows
+
+# Using Make
+make compile
+```
+
+### Uninstallation
+
+```bash
+# Remove the installed binary
+./uninstall.sh
+# Or
+make uninstall
+```
+
+## Technical Details
+
+- **Runtime**: Deno with TypeScript
+- **CLI Framework**: Cliffy for advanced command parsing
+- **Data Source**: Reads from `~/.claude/projects/` (Claude Code's local storage)
+- **Output**: Formatted terminal output with icons and syntax highlighting
+- **Architecture**: Modular design with separate parser, types, and main components
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature-name`
+3. Make your changes
+4. Run tests: `deno task test`
+5. Commit your changes: `git commit -m "Description"`
+6. Push to the branch: `git push origin feature-name`
+7. Submit a pull request
+
+## License
+
+This project is open source. Please check the repository for license details.
+
+## Support
+
+If you encounter issues or have questions:
+- Check the [Issues](https://github.com/ysk1031/claude-code-history-cli/issues) page
+- Create a new issue with detailed information about the problem
+- Include your OS, Deno version, and error messages if applicable
