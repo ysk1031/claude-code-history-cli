@@ -143,8 +143,8 @@ export class ClaudeHistoryParser {
           const description = input.description || "";
           const command = input.command || "";
           let result = `🔧 Running Bash command`;
-          if (description) result += `\n   ${description}`;
-          if (command) result += `\n   $ ${command}`;
+          if (description) result += `\n   │ ${description}`;
+          if (command) result += `\n   └─▶ $ ${command}`;
           return result;
           
         case "Read":
@@ -154,12 +154,12 @@ export class ClaudeHistoryParser {
           let readResult = `📖 Reading file`;
           if (filePath) {
             const fileName = filePath.split("/").pop() || filePath;
-            readResult += `\n   📄 ${fileName}`;
+            readResult += `\n   └─▶ 📄 ${fileName}`;
             if (limit || offset) {
               const details = [];
               if (limit) details.push(`${limit} lines`);
               if (offset) details.push(`from line ${offset}`);
-              readResult += ` (${details.join(", ")})`;
+              readResult += `\n       └─ ${details.join(", ")}`;
             }
           }
           return readResult;
@@ -169,19 +169,19 @@ export class ClaudeHistoryParser {
           const editFilePath = input.file_path || "";
           const fileName = editFilePath ? editFilePath.split("/").pop() || editFilePath : "";
           let editResult = name === "Edit" ? `✏️  Editing file` : `📝 Multi-editing file`;
-          if (fileName) editResult += `\n   📄 ${fileName}`;
+          if (fileName) editResult += `\n   └─▶ 📄 ${fileName}`;
           if (name === "Edit") {
             const oldString = input.old_string || "";
             const newString = input.new_string || "";
             if (oldString && newString) {
               const oldPreview = oldString.length > 50 ? oldString.substring(0, 50) + "..." : oldString;
               const newPreview = newString.length > 50 ? newString.substring(0, 50) + "..." : newString;
-              editResult += `\n   🔄 Replacing: "${oldPreview}"`;
-              editResult += `\n   ➡️  With: "${newPreview}"`;
+              editResult += `\n       ├─ 🔄 Replace: "${oldPreview}"`;
+              editResult += `\n       └─ ➡️  With: "${newPreview}"`;
             }
           } else if (name === "MultiEdit") {
             const edits = input.edits || [];
-            editResult += `\n   🔄 ${edits.length} changes`;
+            editResult += `\n       └─ 🔄 ${edits.length} changes`;
           }
           return editResult;
           
@@ -190,21 +190,22 @@ export class ClaudeHistoryParser {
           const content = input.content || "";
           const writeFileName = writeFilePath ? writeFilePath.split("/").pop() || writeFilePath : "";
           let writeResult = `💾 Creating file`;
-          if (writeFileName) writeResult += `\n   📄 ${writeFileName}`;
-          if (content) writeResult += `\n   📏 ${content.length.toLocaleString()} characters`;
+          if (writeFileName) writeResult += `\n   └─▶ 📄 ${writeFileName}`;
+          if (content) writeResult += `\n       └─ 📏 ${content.length.toLocaleString()} characters`;
           return writeResult;
           
         case "TodoWrite":
           const todos = input.todos || [];
           let todoResult = `📋 Managing tasks`;
-          todoResult += `\n   📝 ${todos.length} tasks updated`;
+          todoResult += `\n   └─▶ 📝 ${todos.length} tasks updated`;
           if (todos.length > 0) {
             const statusIcons = { pending: "⏳", in_progress: "🔄", completed: "✅" };
             todos.slice(0, 3).forEach((todo: any, i: number) => {
               const icon = statusIcons[todo.status as keyof typeof statusIcons] || "📌";
-              todoResult += `\n   ${icon} ${todo.content}`;
+              const prefix = i === todos.length - 1 || (i === 2 && todos.length > 3) ? "└─" : "├─";
+              todoResult += `\n       ${prefix} ${icon} ${todo.content}`;
             });
-            if (todos.length > 3) todoResult += `\n   ... and ${todos.length - 3} more tasks`;
+            if (todos.length > 3) todoResult += `\n       └─ ... and ${todos.length - 3} more tasks`;
           }
           return todoResult;
           
@@ -212,8 +213,9 @@ export class ClaudeHistoryParser {
           const pattern = input.pattern || "";
           const path = input.path || "";
           let globResult = `🔍 Finding files`;
-          if (pattern) globResult += `\n   🎯 Pattern: ${pattern}`;
-          if (path) globResult += `\n   📁 In: ${path}`;
+          if (pattern) globResult += `\n   ├─ 🎯 Pattern: ${pattern}`;
+          if (path) globResult += `\n   └─ 📁 In: ${path}`;
+          else if (pattern) globResult = globResult.replace("├─", "└─");
           return globResult;
           
         case "Grep":
@@ -221,9 +223,16 @@ export class ClaudeHistoryParser {
           const include = input.include || "";
           const grepPath = input.path || "";
           let grepResult = `🔎 Searching content`;
-          if (searchPattern) grepResult += `\n   🎯 Pattern: ${searchPattern}`;
-          if (include) grepResult += `\n   📋 Include: ${include}`;
-          if (grepPath) grepResult += `\n   📁 In: ${grepPath}`;
+          const hasMultiple = [searchPattern, include, grepPath].filter(x => x).length > 1;
+          if (searchPattern) {
+            const isLast = !include && !grepPath;
+            grepResult += `\n   ${isLast ? "└─" : "├─"} 🎯 Pattern: ${searchPattern}`;
+          }
+          if (include) {
+            const isLast = !grepPath;
+            grepResult += `\n   ${isLast ? "└─" : "├─"} 📋 Include: ${include}`;
+          }
+          if (grepPath) grepResult += `\n   └─ 📁 In: ${grepPath}`;
           return grepResult;
           
         default:
@@ -304,21 +313,33 @@ export class ClaudeHistoryParser {
       let result = "📤 Tool Result";
       if (toolResult.content) {
         const content = typeof toolResult.content === "string" ? toolResult.content : JSON.stringify(toolResult.content);
-        // Add proper indentation for better readability
-        const indentedContent = content.split('\n').map((line: string) => `   ${line}`).join('\n');
-        result += `\n${indentedContent}`;
+        // Add proper indentation with visual hierarchy
+        const lines = content.split('\n');
+        if (lines.length > 0) {
+          result += "\n   ╭─────────────────────────────────────────";
+          lines.forEach((line: string, i: number) => {
+            result += `\n   │ ${line}`;
+          });
+          result += "\n   ╰─────────────────────────────────────────";
+        }
       }
       if (toolResult.toolUseResult) {
         const meta = toolResult.toolUseResult;
         if (meta.stdout) {
-          const indentedStdout = meta.stdout.split('\n').map((line: string) => `   ${line}`).join('\n');
-          result += `\n   📤 Output:\n${indentedStdout}`;
+          const stdoutLines = meta.stdout.split('\n');
+          result += `\n   └─▶ 📤 Output:`;
+          stdoutLines.forEach((line: string) => {
+            if (line.trim()) result += `\n       ${line}`;
+          });
         }
         if (meta.stderr) {
-          const indentedStderr = meta.stderr.split('\n').map((line: string) => `   ${line}`).join('\n');
-          result += `\n   ⚠️  Error:\n${indentedStderr}`;
+          const stderrLines = meta.stderr.split('\n');
+          result += `\n   └─▶ ⚠️  Error:`;
+          stderrLines.forEach((line: string) => {
+            if (line.trim()) result += `\n       ${line}`;
+          });
         }
-        if (meta.interrupted) result += `\n   ⏹️  Interrupted: ${meta.interrupted}`;
+        if (meta.interrupted) result += `\n   └─▶ ⏹️  Interrupted: ${meta.interrupted}`;
       }
       return result;
     } else {

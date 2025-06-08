@@ -3,6 +3,7 @@
 import { format } from "@std/datetime";
 import { Command } from "https://deno.land/x/cliffy@v1.0.0-rc.4/command/mod.ts";
 import { Table } from "https://deno.land/x/cliffy@v1.0.0-rc.4/table/mod.ts";
+import { bold, blue, green, yellow, red, cyan, dim, italic } from "https://deno.land/std@0.220.0/fmt/colors.ts";
 import { ClaudeHistoryParser } from "./parser.ts";
 
 const parser = new ClaudeHistoryParser();
@@ -130,10 +131,13 @@ Options:
       return;
     }
 
-    console.log(`\nProject: ${project}`);
-    console.log(`Session: ${session}`);
-    console.log(`Time: ${format(sessionData.startTime, "yyyy-MM-dd HH:mm:ss")} - ${format(sessionData.endTime, "HH:mm:ss")}`);
-    console.log(`Messages: ${sessionData.messages.length}\n`);
+    // Header with better formatting
+    console.log("\n" + "═".repeat(80));
+    console.log(bold(blue("📂 Project: ")) + cyan(project));
+    console.log(bold(blue("🔖 Session: ")) + cyan(session));
+    console.log(bold(blue("🕐 Time:    ")) + format(sessionData.startTime, "yyyy-MM-dd HH:mm:ss") + dim(" → ") + format(sessionData.endTime, "HH:mm:ss"));
+    console.log(bold(blue("💬 Messages:")) + ` ${sessionData.messages.length}`);
+    console.log("═".repeat(80) + "\n");
 
     let messages = sessionData.messages;
     
@@ -151,45 +155,91 @@ Options:
       if (msg.isMeta) continue;
 
       const time = format(new Date(msg.timestamp), "HH:mm:ss");
-      let role: string;
+      let roleIcon: string;
+      let roleLabel: string;
+      let roleColor: (str: string) => string;
       
       // Distinguish between actual user input and system-generated tool results
       if (msg.type === "assistant") {
-        role = "🤖 Claude";
+        roleIcon = "🤖";
+        roleLabel = "Claude";
+        roleColor = green;
       } else if (msg.toolUseResult) {
         // This is a system-generated tool result, not actual user input
-        role = "📤 System";
+        roleIcon = "📤";
+        roleLabel = "System";
+        roleColor = yellow;
       } else {
         // This is actual user input
-        role = "👤 User";
+        roleIcon = "👤";
+        roleLabel = "User";
+        roleColor = blue;
       }
       
       const content = parser.extractMessageContent(msg, fullFlag);
       
       // Add visual separator between messages (except for the first one)
       if (i > 0) {
-        console.log("─".repeat(60));
+        console.log(dim("─".repeat(80)));
       }
       
-      console.log(`\n[${time}] ${role}:`);
+      // Message header with better formatting
+      console.log("");
+      console.log(
+        dim("[") + cyan(time) + dim("]") + " " +
+        roleIcon + " " + 
+        bold(roleColor(roleLabel))
+      );
+      console.log("");
       
       if (fullFlag) {
-        console.log(content);
+        // Format content with proper indentation and styling
+        const formattedContent = content.split("\n").map(line => {
+          // Special formatting for tool usage lines
+          if (line.startsWith("🔧") || line.startsWith("📖") || line.startsWith("✏️") || 
+              line.startsWith("📝") || line.startsWith("💾") || line.startsWith("📋") ||
+              line.startsWith("🔍") || line.startsWith("🔎") || line.startsWith("📁") ||
+              line.startsWith("📤")) {
+            return "  " + yellow(line);
+          } else if (line.startsWith("   ")) {
+            // Indented content (tool details)
+            return "  " + dim(line);
+          } else {
+            return "  " + line;
+          }
+        }).join("\n");
+        console.log(formattedContent);
       } else {
         const lines = content.split("\n");
-        const preview = lines.length > 3 
-          ? lines.slice(0, 3).join("\n") + "\n..."
-          : content;
-        console.log(preview);
+        const previewLines = lines.slice(0, 3);
+        const formattedPreview = previewLines.map(line => {
+          // Special formatting for tool usage lines in preview
+          if (line.startsWith("🔧") || line.startsWith("📖") || line.startsWith("✏️") || 
+              line.startsWith("📝") || line.startsWith("💾") || line.startsWith("📋") ||
+              line.startsWith("🔍") || line.startsWith("🔎") || line.startsWith("📁") ||
+              line.startsWith("📤")) {
+            return "  " + yellow(line);
+          } else {
+            return "  " + line;
+          }
+        }).join("\n");
+        
+        console.log(formattedPreview);
+        if (lines.length > 3) {
+          console.log("  " + dim(italic("... (use -f/--full to see complete message)")));
+        }
       }
       
       console.log("");
     }
 
+    // Footer
+    console.log("═".repeat(80));
+    
     if (recentValue && recentValue < sessionData.messages.length) {
-      console.log(`\n(Showing recent ${recentValue} of ${sessionData.messages.length} messages)`);
+      console.log(dim(`\nShowing recent ${recentValue} of ${sessionData.messages.length} messages`));
     } else if (limitValue && limitValue < sessionData.messages.length) {
-      console.log(`\n(Showing ${limitValue} of ${sessionData.messages.length} messages)`);
+      console.log(dim(`\nShowing first ${limitValue} of ${sessionData.messages.length} messages`));
     }
   });
 
