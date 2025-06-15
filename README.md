@@ -186,16 +186,6 @@ make uninstall
 - **Output**: Formatted terminal output with icons and syntax highlighting
 - **Architecture**: Modular design with separate parser, types, and main components
 
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature-name`
-3. Make your changes
-4. Run tests: `deno task test`
-5. Commit your changes: `git commit -m "Description"`
-6. Push to the branch: `git push origin feature-name`
-7. Submit a pull request
-
 ## License
 
 This project is open source. Please check the repository for license details.
