@@ -77,6 +77,9 @@ cch sessions PROJECT_NAME
 # Show conversation history
 cch show PROJECT_NAME "session-id"
 
+# Show only user prompts from a session
+cch prompts PROJECT_NAME "session-id"
+
 # Search across all projects
 cch search "keyword"
 
@@ -92,6 +95,12 @@ cch show PROJECT_NAME "session-id" --full
 
 # Limit number of messages displayed
 cch show PROJECT_NAME "session-id" --limit 10
+
+# Show user prompts in markdown format
+cch prompts PROJECT_NAME "session-id" --markdown
+
+# Show recent 5 prompts only
+cch prompts PROJECT_NAME "session-id" --recent 5
 
 # Search with project filtering
 cch search -p "My AI Project" "bug fix"
@@ -144,6 +153,16 @@ Shows the conversation history for a specific session with:
 **Options:**
 - `-f, --full` - Display complete message content (default shows abbreviated)
 - `-l, --limit <n>` - Limit the number of messages shown
+- `-r, --recent <n>` - Show recent N messages
+
+### `cch prompts <project> <session-id>`
+Displays only user prompts (requests) from a specific session, filtering out system-generated messages and tool results.
+
+**Options:**
+- `-f, --full` - Display complete prompt content (default shows 3-line preview)
+- `-l, --limit <n>` - Limit the number of prompts shown
+- `-r, --recent <n>` - Show recent N prompts
+- `-m, --markdown` - Output in markdown format (useful for documentation or commit logs)
 
 ### `cch search <query>`
 Searches through conversation content across projects.
