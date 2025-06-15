@@ -265,6 +265,151 @@ Options:
     }
   });
 
+// Show only user prompts
+const promptsCmd = main.command("prompts", "Show only user prompts from a session")
+  .arguments("<project:string> <session:string>")
+  .useRawArgs()
+  .option("-f, --full", "Show full content instead of 3-line preview")
+  .option("-l, --limit <limit:number>", "Limit number of prompts to show")
+  .option("-r, --recent <recent:number>", "Show recent N prompts (newest first)")
+  .option("-m, --markdown", "Output in markdown format")
+  .action(async (options, ...args) => {
+    // Check for help flag
+    if (args.includes("--help") || args.includes("-h")) {
+      console.log(`Usage:   claude-code-history prompts <project> <session>
+Version: 0.1.0
+
+Description:
+
+  Show only user prompts from a session
+
+Options:
+
+  -h, --help            Show this help.
+  -f, --full            Show full content instead of 3-line preview
+  -l, --limit <limit>   Limit number of prompts to show
+  -r, --recent <recent> Show recent N prompts
+  -m, --markdown        Output in markdown format`);
+      Deno.exit(0);
+    }
+    
+    // Manual parsing since we use useRawArgs
+    const fullFlag = args.includes("--full") || args.includes("-f");
+    const markdownFlag = args.includes("--markdown") || args.includes("-m");
+    const limitIndex = args.findIndex(arg => arg === "--limit" || arg === "-l");
+    const limitValue = limitIndex !== -1 && limitIndex + 1 < args.length ? parseInt(args[limitIndex + 1]) : undefined;
+    const recentIndex = args.findIndex(arg => arg === "--recent" || arg === "-r");
+    const recentValue = recentIndex !== -1 && recentIndex + 1 < args.length ? parseInt(args[recentIndex + 1]) : undefined;
+    
+    // Get project and session arguments
+    const project = args[0];
+    const session = args[1];
+    const sessionData = await parser.parseSession(project, session);
+    
+    if (!sessionData) {
+      console.log(`Session not found: ${session}`);
+      return;
+    }
+
+    // Filter for actual user prompts (not tool results)
+    let prompts = sessionData.messages.filter(msg => 
+      msg.type === "user" && !msg.toolUseResult && !msg.isMeta
+    );
+    
+    // Apply limit or recent filter
+    if (recentValue) {
+      prompts = prompts.slice(-recentValue);
+    } else if (limitValue) {
+      prompts = prompts.slice(0, limitValue);
+    }
+
+    if (markdownFlag) {
+      // Markdown output format
+      console.log(`## User Prompts - Project: ${project}\n`);
+      console.log(`### Session: ${session} (${format(sessionData.startTime, "yyyy-MM-dd HH:mm:ss")} - ${format(sessionData.endTime, "HH:mm:ss")})\n`);
+      
+      prompts.forEach((prompt, index) => {
+        const time = format(new Date(prompt.timestamp), "HH:mm:ss");
+        const content = parser.extractMessageContent(prompt, true);
+        console.log(`#### [${time}] Prompt ${index + 1}`);
+        console.log(content);
+        console.log(""); // Empty line between prompts
+      });
+      
+      if (prompts.length === 0) {
+        console.log("*No user prompts found in this session.*");
+      }
+    } else {
+      // Regular formatted output
+      console.log(
+        "\n" +
+        bold(blue("┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓")) + "\n" +
+        bold(blue("┃")) + " ".repeat(29) + bold("📝 User Prompts") + " ".repeat(30) + bold(blue("┃")) + "\n" +
+        bold(blue("┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫")) + "\n" +
+        bold(blue("┃")) + " " + bold("📂 Project") + ":  " + cyan(project).padEnd(64) + bold(blue("┃")) + "\n" +
+        bold(blue("┃")) + " " + bold("🔗 Session") + ":  " + yellow(session).padEnd(64) + bold(blue("┃")) + "\n" +
+        bold(blue("┃")) + " " + bold("🕐 Time") + ":     " + (format(sessionData.startTime, "yyyy-MM-dd HH:mm:ss") + " → " + format(sessionData.endTime, "HH:mm:ss")).padEnd(64) + bold(blue("┃")) + "\n" +
+        bold(blue("┃")) + " " + bold("💬 Prompts") + ":  " + bold(cyan(String(prompts.length))).padEnd(65) + bold(blue("┃")) + "\n" +
+        bold(blue("┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛")) + "\n"
+      );
+
+      if (prompts.length === 0) {
+        console.log("\n" + dim("No user prompts found in this session."));
+      } else {
+        prompts.forEach((prompt, index) => {
+          const time = format(new Date(prompt.timestamp), "HH:mm:ss");
+          const content = parser.extractMessageContent(prompt, fullFlag);
+          
+          if (index > 0) {
+            console.log("\n" + dim("━".repeat(80)));
+          }
+          
+          const timeBox = dim("│") + " " + cyan(time) + " " + dim("│");
+          const promptLabel = "👤 " + bold(blue(`Prompt ${index + 1}`));
+          
+          console.log(
+            "\n" + timeBox + " " + promptLabel + "\n" +
+            dim("┈".repeat(80))
+          );
+          
+          if (fullFlag) {
+            const formattedContent = content.split("\n").map(line => {
+              return line.trim() === "" ? "  │" : "  │ " + line;
+            }).join("\n");
+            console.log(formattedContent);
+          } else {
+            const lines = content.split("\n");
+            const previewLines = lines.slice(0, 3);
+            const formattedPreview = previewLines.map(line => {
+              return line.trim() === "" ? "  │" : "  │ " + line;
+            }).join("\n");
+            
+            console.log(formattedPreview);
+            if (lines.length > 3) {
+              console.log("  │ " + dim(italic("... (use -f/--full to see complete prompt)")));
+            }
+          }
+        });
+      }
+
+      // Footer
+      console.log(
+        "\n" +
+        bold(blue("┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓")) + "\n" +
+        bold(blue("┃")) + " ".repeat(33) + bold("📊 Summary") + " ".repeat(34) + bold(blue("┃")) + "\n" +
+        bold(blue("┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫")) + "\n" +
+        bold(blue("┃")) + " Total prompts found: " + bold(cyan(String(prompts.length))).padEnd(56) + bold(blue("┃")) + "\n" +
+        bold(blue("┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛"))
+      );
+      
+      if (recentValue && recentValue < sessionData.messages.filter(m => m.type === "user" && !m.toolUseResult && !m.isMeta).length) {
+        console.log(dim(`\nShowing recent ${recentValue} prompts`));
+      } else if (limitValue && limitValue < sessionData.messages.filter(m => m.type === "user" && !m.toolUseResult && !m.isMeta).length) {
+        console.log(dim(`\nShowing first ${limitValue} prompts`));
+      }
+    }
+  });
+
 // Search across all sessions
 const searchCmd = main.command("search", "Search for keyword in all conversations")
   .arguments("<keyword:string>")
@@ -355,6 +500,21 @@ Options:
   -f, --full            Show full content instead of 3-line preview
   -l, --limit <limit>   Limit number of messages to show
   -r, --recent <recent> Show recent N messages`);
+    } else if (command === "prompts") {
+      console.log(`Usage:   claude-code-history prompts <project> <session>
+Version: 0.1.0
+
+Description:
+
+  Show only user prompts from a session
+
+Options:
+
+  -h, --help            Show this help.
+  -f, --full            Show full content instead of 3-line preview
+  -l, --limit <limit>   Limit number of prompts to show
+  -r, --recent <recent> Show recent N prompts
+  -m, --markdown        Output in markdown format`);
     } else if (command === "sessions") {
       console.log(`Usage:   claude-code-history sessions <project>
 Version: 0.1.0
